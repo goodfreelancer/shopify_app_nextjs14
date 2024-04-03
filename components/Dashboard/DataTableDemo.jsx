@@ -39,150 +39,7 @@ import {
 } from "@/components/ui/table"
 import { Spinner } from "../spiner"
 
-export const columns = [
-    {
-        id: "select",
-        header: ({ table }) => (
-            <Checkbox
-                checked={
-                    table.getIsAllPageRowsSelected() ||
-                    (table.getIsSomePageRowsSelected() && "indeterminate")
-                }
-                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                aria-label="Select all"
-            />
-        ),
-        cell: ({ row }) => (
-            <Checkbox
-                checked={row.getIsSelected()}
-                onCheckedChange={(value) => row.toggleSelected(!!value)}
-                aria-label="Select row"
-            />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-    },
-    {
-        accessorKey: "sku",
-        header: "SKU",
-        cell: ({ row }) => (
-            <div className="capitalize">{row.getValue("sku")}</div>
-        ),
-    },
-    {
-        accessorKey: "title",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    TITLE
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
-        cell: ({ row }) => <div className="lowercase">{row.getValue("title")}</div>,
-    },
-    {
-        accessorKey: "vendor",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    VENDOR
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
-        cell: ({ row }) => <div className="lowercase text-center">{row.getValue("vendor")}</div>,
-    },
-    {
-        accessorKey: "custom_colectia",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    Metafield custom.colectia
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
-        cell: ({ row }) => <div className="lowercase text-center">{row.getValue("custom_colectia")}</div>,
-    },
-    {
-        accessorKey: "price",
-        header: () => <div className="text-center">PRICE($)</div>,
-        cell: ({ row }) => (
-            <input
-                type="number"
-                placeholder="Enter Discount"
-                defaultValue={row.getValue("price")}
-                onBlur={(e) => {
-                    const newPrice = e.target.value;
-                    // Implement your update logic here
-                    console.log(`New price for ${row.original.id} is: ${newPrice}`);
-                }}
-                className="text-center max-w-40 border-none bg-transparent"
-            />
-        ),
-    },
-    {
-        accessorKey: "com_price",
-        header: () => <div className="text-center">COMPARE PRICE $</div>,
-        cell: ({ row }) => <input
-            type="number"
-            placeholder="Raise Price"
-            defaultValue={row.getValue("com_price")}
-            onBlur={(e) => {
-                const newComPrice = e.target.value;
-                // Implement your update logic here
-                console.log(`New compare price for ${row.original.id} is: ${newComPrice}`);
-            }}
-            className="text-center max-w-40 border-none bg-transparent"
-        />
-    },
-    {
-        accessorKey: "discount",
-        header: () => <div className="text-center">Discount %</div>,
-        cell: ({ row }) => (
-            <input
-                type="number"
-                placeholder="Enter Discount"
-                defaultValue={row.getValue("discount")}
-                onBlur={(e) => {
-                    const newDiscount = e.target.value;
-                    // Implement your update logic here
-                    console.log(`New discount for ${row.original.id} is: ${newDiscount}`);
-                }}
-                className="text-center max-w-40 border-none bg-transparent"
-            />
-        ),
-    },
-    {
-        accessorKey: "raise",
-        header: () => <div className="text-center">RAISE %</div>,
-        cell: ({ row }) => (
-            <input
-                type="number"
-                placeholder="Raise Price"
-                defaultValue={row.getValue("raise")}
-                onBlur={(e) => {
-                    const newRaise = e.target.value;
-                    // Implement your update logic here
-                    console.log(`New raise for ${row.original.id} is: ${newRaise}`);
-                }}
-                className="text-center max-w-40 border-none bg-transparent"
-            />
-        ),
-    },
-]
-
-export function DataTableDemo({ loading, data, pageSize, vendors, onChangeData }) {
+export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, updateVariantsPrice, updatingFlag }) {
     const [sorting, setSorting] = React.useState([])
     const [columnFilters, setColumnFilters] = React.useState([])
     const [columnVisibility, setColumnVisibility] = React.useState({})
@@ -192,6 +49,154 @@ export function DataTableDemo({ loading, data, pageSize, vendors, onChangeData }
       pageIndex: 0,
       pageSize: pageSize,
     })
+    const [changedRowsObject, setChangedRowsObject] = React.useState({});
+    
+    const columns = [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={
+                        table.getIsAllPageRowsSelected() ||
+                        (table.getIsSomePageRowsSelected() && "indeterminate")
+                    }
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "sku",
+            header: "SKU",
+            cell: ({ row }) => (
+                <div className="capitalize">{row.getValue("sku")}</div>
+            ),
+        },
+        {
+            accessorKey: "title",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        TITLE
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => <div className="lowercase">{row.getValue("title")}</div>,
+        },
+        {
+            accessorKey: "vendor",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        VENDOR
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => <div className="lowercase text-center">{row.getValue("vendor")}</div>,
+        },
+        {
+            accessorKey: "custom_colectia",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Metafield custom.colectia
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => <div className="lowercase text-center">{row.getValue("custom_colectia")}</div>,
+        },
+        {
+            accessorKey: "price",
+            header: () => <div className="text-center">PRICE($)</div>,
+            cell: ({ row }) => (
+                <input
+                    type="number"
+                    placeholder="Price"
+                    defaultValue={row.getValue("price")}
+                    onBlur={(e) => {
+                        const newPrice = e.target.value;
+                        // Implement your update logic here
+                        console.log(`New price for ${row.original.id} is: ${newPrice}`);
+                        let inputedRowIndex = data.findIndex(v => v.id == row.original.id);
+                        data[inputedRowIndex]['price'] = parseFloat(newPrice);
+                    }}
+                    className="text-center max-w-40 border-none bg-transparent"
+                />
+            ),
+        },
+        {
+            accessorKey: "com_price",
+            header: () => <div className="text-center">COMPARE PRICE $</div>,
+            cell: ({ row }) => <input
+                type="number"
+                placeholder="Compare Price"
+                defaultValue={row.getValue("com_price")}
+                onBlur={(e) => {
+                    const newComPrice = e.target.value;
+                    // Implement your update logic here
+                    console.log(`New compare price for ${row.original.id} is: ${newComPrice}`);
+                    let inputedRowIndex = data.findIndex(v => v.id == row.original.id);
+                    data[inputedRowIndex]['com_price'] = parseFloat(newComPrice);
+                }}
+                className="text-center max-w-40 border-none bg-transparent"
+            />
+        },
+        {
+            accessorKey: "discount",
+            header: () => <div className="text-center">Discount %</div>,
+            cell: ({ row }) => (
+                <input
+                    type="number"
+                    placeholder="Enter Discount"
+                    defaultValue={row.getValue("discount")}
+                    onBlur={(e) => {
+                        const newDiscount = e.target.value;
+                        // Implement your update logic here
+                        console.log(`New discount for ${row.original.id} is: ${newDiscount}`);
+                    }}
+                    className="text-center max-w-40 border-none bg-transparent"
+                />
+            ),
+        },
+        {
+            accessorKey: "raise",
+            header: () => <div className="text-center">RAISE %</div>,
+            cell: ({ row }) => (
+                <input
+                    type="number"
+                    placeholder="Raise Price"
+                    defaultValue={row.getValue("raise")}
+                    onBlur={(e) => {
+                        const newRaise = e.target.value;
+                        // Implement your update logic here
+                        console.log(`New raise for ${row.original.id} is: ${newRaise}`);
+                    }}
+                    className="text-center max-w-40 border-none bg-transparent"
+                />
+            ),
+        },
+    ]   
 
     const table = useReactTable({
         data,
@@ -249,7 +254,22 @@ export function DataTableDemo({ loading, data, pageSize, vendors, onChangeData }
     }
 
     const updateData = () => {
-        console.log('sdsd');
+        // console.log('data',data, allProducts, pagination);
+        let length = allProducts.length;
+        let changedVariants = []
+        for (let i=0; i< length; i++) {
+            if (allProducts[i].price != data[i].price || allProducts[i].com_price != data[i].com_price) {
+                changedVariants.push({
+                    id: data[i]['id'], 
+                    price: data[i]['price'], 
+                    com_price: data[i]['com_price']
+                });
+            }
+        }
+        console.log('changedVariants', changedVariants);
+        if (changedVariants.length > 0) {
+            updateVariantsPrice(changedVariants);
+        }
     }
 
     return (
@@ -294,7 +314,7 @@ export function DataTableDemo({ loading, data, pageSize, vendors, onChangeData }
                             Columns <ChevronDown className="ml-2 h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <Button onClick={updateData} className="ml-3">Save & Update</Button>
+                    <Button onClick={updateData} className={`ml-3 ${!!updatingFlag ? 'opacity-50' : ''}`}>Save & Update</Button>
                     <DropdownMenuContent align="end">
                         {table
                             .getAllColumns()

@@ -26,7 +26,7 @@ export async function GET(req) {
 
     const url = req.nextUrl;
     let page = parseInt(url.searchParams.get('page'), 10) || 1;
-    const pageSize = parseInt(url.searchParams.get('pageSize'), 10) || 100;
+    const pageSize = parseInt(url.searchParams.get('pageSize'), 10) || 250;
     if (!url.searchParams.get('page') && !url.searchParams.get('pageSize')) page = 1000;
     // console.log('Query parameters:', page, pageSize);
 

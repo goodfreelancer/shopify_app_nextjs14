@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { DataTableDemo } from "@/components/Dashboard/DataTableDemo";
+import axios from 'axios';
 
 export default function Dashboard() {
 
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [allVendors, setAllVendors] = useState([]);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updatingFlag, setUpdatingFlag] = useState(false);
 
   async function fetchAllProducts() {
     setLoading(true);
@@ -41,13 +43,13 @@ export default function Dashboard() {
       const transformedData = data.products.map(convertVariantToTableFormat);
       // console.log('transformData', transformedData);
       setAllProducts(transformedData); // Assuming the API returns an array of data      
-      setData(transformedData);
+      setData(transformedData.map(v => ({...v})));
       //get all vendors:3}, {a:1, b:5}];
       const uniqueVendorValues = [...new Set(transformedData.map(item => item.vendor))];
       console.log('vendors', uniqueVendorValues)
       setAllVendors(uniqueVendorValues)
-    } catch (error) {
-      console.error('An error occurred while fetching table data:', error);
+    } catch (err) {
+      console.error('An error occurred while fetching table data:', err);
     }
     setLoading(false);
   }
@@ -55,19 +57,34 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAllProducts();
   }, [])
-  
-  const handleChangeData = (data) => {
-    setData(data);
-  };
 
+  async function updateVariantsPrice(variantsArray) {
+    try {
+      setUpdatingFlag(true);
+      setData(data.map(v => ({...v})));
+      setAllProducts(data.map(v => ({...v})));
+      const res = await axios.post(`/api/variants`, {
+        variants: variantsArray
+      });
+      if (res.data.status == 'success') {
+        alert('saved successfully.');
+      }
+    } catch(err) {
+      console.error('Updating error', err);
+    }
+    setUpdatingFlag(false);
+  }
+  
   return (
     <div className="flex min-h-screen flex-col items-center justify-between p-24">
       <DataTableDemo
         data={data}
+        allProducts={allProducts}
         vendors={allVendors}
         loading={loading}
         pageSize={PAGE_SIZE}
-        onChangeData={handleChangeData}
+        updateVariantsPrice={updateVariantsPrice}
+        updatingFlag={updatingFlag}
       />
     </div>
   )
