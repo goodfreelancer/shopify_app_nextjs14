@@ -25,9 +25,10 @@ export async function GET(req) {
     const client = new shopify.clients.Graphql({session: session})
 
     const url = req.nextUrl;
-    const page = parseInt(url.searchParams.get('page'), 10) || 1;
-    const pageSize = parseInt(url.searchParams.get('pageSize'), 10) || 10;
-    console.log('Query parameters:', page, pageSize);
+    let page = parseInt(url.searchParams.get('page'), 10) || 1;
+    const pageSize = parseInt(url.searchParams.get('pageSize'), 10) || 100;
+    if (!url.searchParams.get('page') && !url.searchParams.get('pageSize')) page = 1000;
+    // console.log('Query parameters:', page, pageSize);
 
     let pageInfo = null;
     let products = [];
@@ -45,6 +46,16 @@ export async function GET(req) {
                                 id
                                 title
                                 vendor
+                                metafields(first: 5) {
+                                    edges {
+                                        node {
+                                            id 
+                                            namespace
+                                            key
+                                            value
+                                        }
+                                    }
+                                }
                                 variants(first: 1) {
                                     edges {
                                         node {
@@ -76,7 +87,7 @@ export async function GET(req) {
                 });
 
             let original_products = data.data.products.edges;
-            console.log('GraphQL Response:', data, original_products);
+            // console.log('GraphQL Response:', data, original_products);
 
             products = [...products, ...original_products.map(p => p.node)];
 
@@ -89,8 +100,13 @@ export async function GET(req) {
         }
 
         // // Trim the products array to only include the items on the requested page
-        const start = (page - 1) * pageSize;
-        const paginatedProducts = products.slice(start, start + pageSize);
+        let paginatedProducts = [];
+        if (!url.searchParams.get('page') && !url.searchParams.get('pageSize')) {
+            paginatedProducts = products;
+        } else {
+            const start = (page - 1) * pageSize;
+            paginatedProducts = products.slice(start, start + pageSize);
+        }
 
         return new Response(JSON.stringify({products: paginatedProducts}), { status: 200 })
     } catch (error) {

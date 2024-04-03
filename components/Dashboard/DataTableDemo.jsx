@@ -4,6 +4,7 @@ import * as React from "react"
 import {
     ColumnDef,
     ColumnFiltersState,
+    PaginationState,
     SortingState,
     VisibilityState,
     flexRender,
@@ -20,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
+    DropdownMenuRadioItem,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
@@ -180,20 +182,24 @@ export const columns = [
     },
 ]
 
-export function DataTableDemo({ loading, data, onPageChange, currentPage }) {
+export function DataTableDemo({ loading, data, pageSize, vendors, onChangeData }) {
     const [sorting, setSorting] = React.useState([])
     const [columnFilters, setColumnFilters] = React.useState([])
     const [columnVisibility, setColumnVisibility] = React.useState({})
     const [rowSelection, setRowSelection] = React.useState({})
     const [globalFilter, setGlobalFilter] = React.useState('');
+    const [pagination, setPagination] = React.useState({
+      pageIndex: 0,
+      pageSize: pageSize,
+    })
 
     const table = useReactTable({
         data,
         columns,
+        debugTable: true,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
@@ -208,9 +214,8 @@ export function DataTableDemo({ loading, data, onPageChange, currentPage }) {
             const lowerCaseFilterValue = filterValue.toString().toLowerCase();
 
             // Check if vendor or price contains the filter string, convert to strings and to lowercase to make the search case-insensitive
-            const containsVendor = row.getValue('vendor').toString().toLowerCase().includes(lowerCaseFilterValue);
-            const containsPrice = row.getValue('price').toString().toLowerCase().includes(lowerCaseFilterValue);
-            return containsVendor || containsPrice;
+            const containsTitle = row.getValue('title').toString().toLowerCase().includes(lowerCaseFilterValue);
+            return containsTitle;
         },
         onGlobalFilterChange: setGlobalFilter,
         state: {
@@ -219,21 +224,29 @@ export function DataTableDemo({ loading, data, onPageChange, currentPage }) {
             columnVisibility,
             rowSelection,
             globalFilter,
+            pagination,
         },
+        getPaginationRowModel: getPaginationRowModel(),
+        onPaginationChange: setPagination,
     })
-    const vendorFilterValue = (table.getColumn('vendor')?.getFilterValue()) ?? '';
-    const priceFilterValue = (table.getColumn('price')?.getFilterValue()) ?? '';
+    const titleFilterValue = (table.getColumn('title')?.getFilterValue()) ?? '';
 
-    const filterValue = vendorFilterValue; // or some combination if using multiple filters
+    const filterValue = titleFilterValue; // or some combination if using multiple filters
 
     const handleFilterChange = (value) => {
+        console.log('value', value);
         // Update the filter for the 'vendor' column
-        table.getColumn('vendor').setFilterValue(value);
+        table.getColumn('title').setFilterValue(value);
 
         // If you also want to filter the 'price' column simultaneously,
         // uncomment the following line:
-        table.getColumn('price').setFilterValue(value);
     };
+
+    const filterByVendor = (vendor) => {
+        console.log('vendor', vendor);
+        // Update the filter for the 'vendor' column
+        // table.getColumn('vendor').setFilterValue(vendor);
+    }
 
     const updateData = () => {
         console.log('sdsd');
@@ -248,9 +261,30 @@ export function DataTableDemo({ loading, data, onPageChange, currentPage }) {
                     onChange={(event) => handleFilterChange(event.target.value)}
                     className=" max-w-3xl"
                 />
-                <Button variant="outline" className="ml-auto">
+                {/* <Button variant="outline" className="ml-auto">
                     Filter by vendor <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
+                </Button> */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="ml-auto">
+                            Filter by vendor <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {vendors.length > 0 && vendors
+                            .map((vendor, index) => {
+                                return (
+                                    <DropdownMenuRadioItem
+                                        key={index}
+                                        className="capitalize"
+                                        onClick={(e) => filterByVendor(vendor)}
+                                    >
+                                        {vendor}
+                                    </DropdownMenuRadioItem>
+                                )
+                            })}
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="outline" className="ml-auto">
                     Filter by metafield (custom.colectia) <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
@@ -305,7 +339,7 @@ export function DataTableDemo({ loading, data, onPageChange, currentPage }) {
                     <TableBody>
                         {
                             loading ? (
-                                <tr> {/* Add this line */}
+                                <tr className="h-48"> {/* Add this line */}
                                     <td colSpan={columns.length}> {/* Adjust colSpan as needed */}
                                         <Spinner />
                                     </td>
@@ -348,15 +382,17 @@ export function DataTableDemo({ loading, data, onPageChange, currentPage }) {
                 <div className="space-x-2">
                     <Button
                         variant="outline"
-                        onClick={() => onPageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
                     >
                         Previous
                     </Button>
-                    <span>Page {currentPage}</span>
+                    <span>Page {table.getState().pagination.pageIndex + 1} of{' '}
+                        {table.getPageCount().toLocaleString() ?? ' '}</span>
                     <Button
                         variant="outline"
-                        onClick={() => onPageChange(currentPage + 1)}
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
                     >
                         Next
                     </Button>
