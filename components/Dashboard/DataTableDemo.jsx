@@ -264,7 +264,7 @@ export function DataTableDemo({ loading, data, allProducts, pageSize, vendors, a
     }
 
     const updatePrice = () => {
-        console.log('data',data, allProducts, pagination);
+        // console.log('data',data, allProducts, pagination);
         let length = allProducts.length;
         let changedVariants = []
         for (let i = 0; i < length; i++) {
@@ -274,10 +274,8 @@ export function DataTableDemo({ loading, data, allProducts, pageSize, vendors, a
                 let com_price = data[i]['com_price'];
                 if (!!data[i].discount) {
                     price = Math.round(price * (100 - data[i].discount)) / 100;
-                    com_price = Math.round(com_price * (100 - data[i].discount)) / 100;
                 } else if (!!data[i].raise) {
                     price = Math.round(price * (100 + data[i].raise)) / 100;
-                    com_price = Math.round(com_price * (100 + data[i].raise)) / 100;
                 }
                 changedVariants.push({
                     id: data[i]['id'],
@@ -286,7 +284,7 @@ export function DataTableDemo({ loading, data, allProducts, pageSize, vendors, a
                 });
             }
         }
-        console.log('changedVariants', changedVariants);
+        // console.log('changedVariants', changedVariants);
         if (changedVariants.length > 0) {
             updateVariantsPrice(changedVariants);
         }

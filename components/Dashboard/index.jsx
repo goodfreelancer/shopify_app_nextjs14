@@ -3,8 +3,11 @@
 import React, { useState, useEffect } from "react"
 import { DataTableDemo } from "@/components/Dashboard/DataTableDemo";
 import axios from 'axios';
+import { ToastAction } from "@/components/ui/toast"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function Dashboard() {
+  const { toast } = useToast()
 
   const PAGE_SIZE = 100;
 
@@ -17,7 +20,7 @@ export default function Dashboard() {
 
   const convertVariantToTableFormat = (product) => {
     // Assuming only one variant per product for simplicity
-    const metafields = product.metafields.edges.map((edge) =>{ return {key: edge.node.key, value: edge.node.value, namespace: edge.node.namespace}});
+    const metafields = product.metafields.edges.map((edge) => { return { key: edge.node.key, value: edge.node.value, namespace: edge.node.namespace } });
     let index = metafields.findIndex((m) => m.key == 'colectia');
     let colectia = "";
     if (index >= 0) colectia = metafields[index]['value'];
@@ -29,7 +32,7 @@ export default function Dashboard() {
       sku: variant.sku,
       title: product.title,
       vendor: product.vendor,
-      custom_colectia: colectia, 
+      custom_colectia: colectia,
       price: parseFloat(variant.price),
       com_price: parseFloat(variant.compareAtPrice || '0'), // if compareAtPrice is null or undefined, default to '0'
       discount: null, // Placeholder value, set as required
@@ -45,13 +48,13 @@ export default function Dashboard() {
       const transformedData = data.products.map(convertVariantToTableFormat);
       // console.log('transformData', transformedData);
       setAllProducts(transformedData); // Assuming the API returns an array of data      
-      setData([...transformedData.map(v => ({...v}))]);
+      setData([...transformedData.map(v => ({ ...v }))]);
       //get all vendors:3}, {a:1, b:5}];
       const uniqueVendorValues = [...new Set(transformedData.map(item => item.vendor))];
       setAllVendors(uniqueVendorValues)
-      const uniqueColectiaValues = [...new Set(transformedData.filter(item => item.custom_colectia.trim().length > 0).map(item => item.custom_colectia ))];
+      const uniqueColectiaValues = [...new Set(transformedData.filter(item => item.custom_colectia.trim().length > 0).map(item => item.custom_colectia))];
       setAllColectia(uniqueColectiaValues)
-      console.log('vendors, colectia', uniqueVendorValues, uniqueColectiaValues)
+      // console.log('vendors, colectia', uniqueVendorValues, uniqueColectiaValues)
     } catch (err) {
       console.error('An error occurred while fetching table data:', err);
     }
@@ -67,32 +70,32 @@ export default function Dashboard() {
       setUpdatingFlag(true);
       setData([...allProducts.map(v => {
         let index = variantsArray.findIndex(value => value.id == v.id);
-        if (index >= 0) return {...v, price: variantsArray[index].price, com_price: variantsArray[index].com_price}
-        else return {...v}
+        if (index >= 0) return { ...v, price: variantsArray[index].price, com_price: variantsArray[index].com_price }
+        else return { ...v }
       })]);
       setAllProducts([...allProducts.map(v => {
         let index = variantsArray.findIndex(value => value.id == v.id);
-        if (index >= 0) return {...v, price: variantsArray[index].price, com_price: variantsArray[index].com_price}
-        else return {...v}
+        if (index >= 0) return { ...v, price: variantsArray[index].price, com_price: variantsArray[index].com_price }
+        else return { ...v }
       })]);
       const res = await axios.post(`/api/variants`, {
         variants: variantsArray
       });
       if (res.data.status == 'success') {
-        // alert('saved successfully.');
         console.log('saved successfully.');
       }
-    } catch(err) {
+    } catch (err) {
       console.error('Updating error', err);
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem with your request.",
+        action: <ToastAction altText="Try again">Try again</ToastAction>,
+      });
     }
+    setUpdatingFlag(false);
   }
 
-  useEffect(() => {
-    // console.log('data, updating flag', data, updatingFlag)
-    if (data.length > 0) setUpdatingFlag(false);
-  }, [data])
-
-  
   return (
     <div className="flex min-h-screen flex-col items-center justify-between p-24">
       <DataTableDemo
