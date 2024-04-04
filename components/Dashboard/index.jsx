@@ -10,7 +10,7 @@ export default function Dashboard() {
 
   const [allProducts, setAllProducts] = useState([]);
   const [allVendors, setAllVendors] = useState([]);
-  const [allMetafields, setAllMetafields] = useState([]);
+  const [allColectia, setAllColectia] = useState([]);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingFlag, setUpdatingFlag] = useState(false);
@@ -48,8 +48,10 @@ export default function Dashboard() {
       setData([...transformedData.map(v => ({...v}))]);
       //get all vendors:3}, {a:1, b:5}];
       const uniqueVendorValues = [...new Set(transformedData.map(item => item.vendor))];
-      console.log('vendors', uniqueVendorValues)
       setAllVendors(uniqueVendorValues)
+      const uniqueColectiaValues = [...new Set(transformedData.filter(item => item.custom_colectia.trim().length > 0).map(item => item.custom_colectia ))];
+      setAllColectia(uniqueColectiaValues)
+      console.log('vendors, colectia', uniqueVendorValues, uniqueColectiaValues)
     } catch (err) {
       console.error('An error occurred while fetching table data:', err);
     }
@@ -86,7 +88,7 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    console.log('data, updating flag', data, updatingFlag)
+    // console.log('data, updating flag', data, updatingFlag)
     if (data.length > 0) setUpdatingFlag(false);
   }, [data])
 
@@ -97,6 +99,7 @@ export default function Dashboard() {
         data={data}
         allProducts={allProducts}
         vendors={allVendors}
+        allColectia={allColectia}
         loading={loading}
         pageSize={PAGE_SIZE}
         updateVariantsPrice={updateVariantsPrice}

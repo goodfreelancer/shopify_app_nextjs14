@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/table"
 import { Spinner } from "../spiner"
 
-export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, updateVariantsPrice, updatingFlag }) {
+export function DataTableDemo({ loading, data, allProducts, pageSize, vendors, allColectia, updateVariantsPrice, updatingFlag }) {
     const [sorting, setSorting] = React.useState([])
     const [columnFilters, setColumnFilters] = React.useState([])
     const [columnVisibility, setColumnVisibility] = React.useState({})
@@ -256,6 +256,12 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
         // Update the filter for the 'vendor' column
         table.getColumn('vendor').setFilterValue(vendor);
     }
+    
+    const filterByColetia = (colectia) => {
+        console.log('colectia', colectia);
+        // Update the filter for the 'colectia' column
+        table.getColumn('custom_colectia').setFilterValue(colectia);
+    }
 
     const updatePrice = () => {
         console.log('data',data, allProducts, pagination);
@@ -328,9 +334,39 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
                         </DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-                <Button variant="outline" className="ml-auto">
-                    Filter by metafield (custom.colectia) <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="ml-auto">
+                            Filter by metafield (custom.colectia) <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {allColectia.length > 0 && allColectia
+                            .map((colectia, index) => {
+                                return (
+                                    <DropdownMenuCheckboxItem
+                                        key={index}
+                                        className="capitalize"
+                                        checked={table.getColumn('custom_colectia').getFilterValue() === colectia}
+                                        onCheckedChange={(value) =>
+                                            filterByColetia(colectia)
+                                        }
+                                    >
+                                        {colectia}
+                                    </DropdownMenuCheckboxItem>
+                                )
+                            })}
+                        <DropdownMenuCheckboxItem
+                            className="capitalize"
+                            checked={!table.getColumn('custom_colectia').getFilterValue()}
+                            onCheckedChange={(value) =>
+                                table.getColumn('custom_colectia').setFilterValue("")
+                            }
+                        >
+                            reset
+                        </DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto">
