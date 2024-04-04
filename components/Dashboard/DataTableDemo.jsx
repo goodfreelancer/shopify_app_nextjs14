@@ -46,11 +46,11 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
     const [rowSelection, setRowSelection] = React.useState({})
     const [globalFilter, setGlobalFilter] = React.useState('');
     const [pagination, setPagination] = React.useState({
-      pageIndex: 0,
-      pageSize: pageSize,
+        pageIndex: 0,
+        pageSize: pageSize,
     })
     const [changedRowsObject, setChangedRowsObject] = React.useState({});
-    
+
     const columns = [
         {
             id: "select",
@@ -174,6 +174,8 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
                         const newDiscount = e.target.value;
                         // Implement your update logic here
                         console.log(`New discount for ${row.original.id} is: ${newDiscount}`);
+                        let inputedRowIndex = data.findIndex(v => v.id == row.original.id);
+                        data[inputedRowIndex]['discount'] = parseFloat(newDiscount);
                     }}
                     className="text-center max-w-40 border-none bg-transparent"
                 />
@@ -191,12 +193,14 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
                         const newRaise = e.target.value;
                         // Implement your update logic here
                         console.log(`New raise for ${row.original.id} is: ${newRaise}`);
+                        let inputedRowIndex = data.findIndex(v => v.id == row.original.id);
+                        data[inputedRowIndex]['raise'] = parseFloat(newRaise);
                     }}
                     className="text-center max-w-40 border-none bg-transparent"
                 />
             ),
         },
-    ]   
+    ]
 
     const table = useReactTable({
         data,
@@ -250,19 +254,29 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
     const filterByVendor = (vendor) => {
         console.log('vendor', vendor);
         // Update the filter for the 'vendor' column
-        // table.getColumn('vendor').setFilterValue(vendor);
+        table.getColumn('vendor').setFilterValue(vendor);
     }
 
-    const updateData = () => {
-        // console.log('data',data, allProducts, pagination);
+    const updatePrice = () => {
+        console.log('data',data, allProducts, pagination);
         let length = allProducts.length;
         let changedVariants = []
-        for (let i=0; i< length; i++) {
-            if (allProducts[i].price != data[i].price || allProducts[i].com_price != data[i].com_price) {
+        for (let i = 0; i < length; i++) {
+            if (allProducts[i].price != data[i].price || allProducts[i].com_price != data[i].com_price || 
+                !!data[i].discount || !!data[i].raise) {
+                let price = data[i]['price'];
+                let com_price = data[i]['com_price'];
+                if (!!data[i].discount) {
+                    price = Math.round(price * (100 - data[i].discount)) / 100;
+                    com_price = Math.round(com_price * (100 - data[i].discount)) / 100;
+                } else if (!!data[i].raise) {
+                    price = Math.round(price * (100 + data[i].raise)) / 100;
+                    com_price = Math.round(com_price * (100 + data[i].raise)) / 100;
+                }
                 changedVariants.push({
-                    id: data[i]['id'], 
-                    price: data[i]['price'], 
-                    com_price: data[i]['com_price']
+                    id: data[i]['id'],
+                    price: price,
+                    com_price: com_price
                 });
             }
         }
@@ -281,9 +295,6 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
                     onChange={(event) => handleFilterChange(event.target.value)}
                     className=" max-w-3xl"
                 />
-                {/* <Button variant="outline" className="ml-auto">
-                    Filter by vendor <ChevronDown className="ml-2 h-4 w-4" />
-                </Button> */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto">
@@ -294,15 +305,27 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
                         {vendors.length > 0 && vendors
                             .map((vendor, index) => {
                                 return (
-                                    <DropdownMenuRadioItem
+                                    <DropdownMenuCheckboxItem
                                         key={index}
                                         className="capitalize"
-                                        onClick={(e) => filterByVendor(vendor)}
+                                        checked={table.getColumn('vendor').getFilterValue() === vendor}
+                                        onCheckedChange={(value) =>
+                                            filterByVendor(vendor)
+                                        }
                                     >
                                         {vendor}
-                                    </DropdownMenuRadioItem>
+                                    </DropdownMenuCheckboxItem>
                                 )
                             })}
+                        <DropdownMenuCheckboxItem
+                            className="capitalize"
+                            checked={!table.getColumn('vendor').getFilterValue()}
+                            onCheckedChange={(value) =>
+                                table.getColumn('vendor').setFilterValue("")
+                            }
+                        >
+                            reset
+                        </DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
                 <Button variant="outline" className="ml-auto">
@@ -314,7 +337,7 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
                             Columns <ChevronDown className="ml-2 h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <Button onClick={updateData} className={`ml-3 ${!!updatingFlag ? 'opacity-50' : ''}`}>Save & Update</Button>
+                    <Button onClick={updatePrice} className={`ml-3 ${!!updatingFlag ? 'opacity-50' : ''}`}>Save & Update</Button>
                     <DropdownMenuContent align="end">
                         {table
                             .getAllColumns()
@@ -359,11 +382,14 @@ export function DataTableDemo({ loading, data, pageSize, vendors, allProducts, u
                     <TableBody>
                         {
                             loading ? (
-                                <tr className="h-48"> {/* Add this line */}
-                                    <td colSpan={columns.length}> {/* Adjust colSpan as needed */}
+                                <TableRow className="h-48">
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center"
+                                    >
                                         <Spinner />
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             ) : (
                                 table.getRowModel().rows.length ? (
                                     table.getRowModel().rows.map((row) => (

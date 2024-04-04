@@ -7,9 +7,17 @@ import axios from 'axios';
 export default function Dashboard() {
 
   const PAGE_SIZE = 100;
+
+  const [allProducts, setAllProducts] = useState([]);
+  const [allVendors, setAllVendors] = useState([]);
+  const [allMetafields, setAllMetafields] = useState([]);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingFlag, setUpdatingFlag] = useState(false);
+
   const convertVariantToTableFormat = (product) => {
     // Assuming only one variant per product for simplicity
-    const metafields = product.metafields.edges.map((edge) =>{ return {key: edge.node.key, value: edge.node.value}});
+    const metafields = product.metafields.edges.map((edge) =>{ return {key: edge.node.key, value: edge.node.value, namespace: edge.node.namespace}});
     let index = metafields.findIndex((m) => m.key == 'colectia');
     let colectia = "";
     if (index >= 0) colectia = metafields[index]['value'];
@@ -29,12 +37,6 @@ export default function Dashboard() {
     };
   };
 
-  const [allProducts, setAllProducts] = useState([]);
-  const [allVendors, setAllVendors] = useState([]);
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [updatingFlag, setUpdatingFlag] = useState(false);
-
   async function fetchAllProducts() {
     setLoading(true);
     try {
@@ -43,7 +45,7 @@ export default function Dashboard() {
       const transformedData = data.products.map(convertVariantToTableFormat);
       // console.log('transformData', transformedData);
       setAllProducts(transformedData); // Assuming the API returns an array of data      
-      setData(transformedData.map(v => ({...v})));
+      setData([...transformedData.map(v => ({...v}))]);
       //get all vendors:3}, {a:1, b:5}];
       const uniqueVendorValues = [...new Set(transformedData.map(item => item.vendor))];
       console.log('vendors', uniqueVendorValues)
@@ -61,19 +63,33 @@ export default function Dashboard() {
   async function updateVariantsPrice(variantsArray) {
     try {
       setUpdatingFlag(true);
-      setData(data.map(v => ({...v})));
-      setAllProducts(data.map(v => ({...v})));
+      setData([...allProducts.map(v => {
+        let index = variantsArray.findIndex(value => value.id == v.id);
+        if (index >= 0) return {...v, price: variantsArray[index].price, com_price: variantsArray[index].com_price}
+        else return {...v}
+      })]);
+      setAllProducts([...allProducts.map(v => {
+        let index = variantsArray.findIndex(value => value.id == v.id);
+        if (index >= 0) return {...v, price: variantsArray[index].price, com_price: variantsArray[index].com_price}
+        else return {...v}
+      })]);
       const res = await axios.post(`/api/variants`, {
         variants: variantsArray
       });
       if (res.data.status == 'success') {
-        alert('saved successfully.');
+        // alert('saved successfully.');
+        console.log('saved successfully.');
       }
     } catch(err) {
       console.error('Updating error', err);
     }
-    setUpdatingFlag(false);
   }
+
+  useEffect(() => {
+    console.log('data, updating flag', data, updatingFlag)
+    if (data.length > 0) setUpdatingFlag(false);
+  }, [data])
+
   
   return (
     <div className="flex min-h-screen flex-col items-center justify-between p-24">
