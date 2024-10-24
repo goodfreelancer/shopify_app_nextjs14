@@ -1,3 +1,8 @@
+Shopify custom app for product.
+![image](https://github.com/user-attachments/assets/2b031f5b-b80c-47a9-9db8-92f0171f647f)
+
+
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
